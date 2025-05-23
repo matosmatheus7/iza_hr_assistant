@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IZA HR Assistant - Simular Entrevista</title>
+
+
+<!-- Google Font: Source Sans Pro -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="{{ url_for('static', filename='plugins/fontawesome-free/css/all.min.css') }}">
+<!-- overlayScrollbars -->
+<link rel="stylesheet" href="{{ url_for('static', filename='plugins/overlayScrollbars/css/OverlayScrollbars.min.css') }}">
+<!-- Theme style -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/adminlte.min.css') }}">
+<!-- Loader style -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/loader.css') }}">
+  <style>
+    .entrevista-box {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    #resultadoFinal {
+      margin-top: 30px;
+    }
+
+    #resumoFinal, #qnaFinal {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: .25rem;
+      padding: 15px;
+    }
+
+  </style>
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+  <!-- Loader -->
+<div class="loader-container">
+    <div class="loader"></div>
+</div>
+<!-- Site wrapper -->
+<div class="wrapper">
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="{{ url_for('homepage') }}" class="nav-link">Home</a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="{{ url_for('doc') }}" class="nav-link">Documentação</a>
+      </li>
+    </ul>
+  </nav>
+  <!-- /.navbar -->
+
+  <!-- Main Sidebar Container -->
+  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <!-- Brand Logo -->
+    <a href="{{ url_for('homepage') }}" class="brand-link">
+      <img src="{{ url_for('static', filename='img/applogo2.png') }}" alt="AdminLTE Logo" style="margin-left:10%;opacity: .8;width: 180px;">
+      <!-- <span class="brand-text font-weight-light">IZA RH</span> -->
+    </a>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Sidebar Menu -->
+      <nav class="mt-2">
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+          <!-- Add icons to the links using the .nav-icon class
+               with font-awesome or any other icon font library -->
+          <li class="nav-item">
+            <a href="{{ url_for('homepage') }}" class="nav-link">
+              <i class="nav-icon fas fa-th"></i>
+              <p>
+                Dashboard
+              </p>
+            </a>
+          </li>
+            <li class="nav-item">
+            <a href="{{ url_for('interview') }}" class="nav-link">
+              <i class="nav-icon fas fa-id-card"></i>
+              <p>
+                Simulação Entrevista
+              </p>
+            </a>
+          </li>
+                    <li class="nav-item">
+            <a href="{{ url_for('try_it_yourself') }}" class="nav-link">
+              <i class="nav-icon fas fa-lightbulb"></i>
+              <p>
+                Try it yourself
+              </p>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <!-- /.sidebar-menu -->
+    </div>
+    <!-- /.sidebar -->
+  </aside>
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+          <div class="row">
+
+          </div>
+            <div class="callout callout-info">
+        Selecione uma vaga e um candidato para simular a entrevista com o chatbot e vê-lo em ação. <br>
+        Ao final, os dados serão salvos no nosso banco e você poderá ter acesso no dashboard.<br>
+        Lembre-se de conectar um dispositivo de áudio (microfone e fones de ouvido) antes de iniciar a entrevista.
+      </div>
+      </div>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+
+
+      <div class="entrevista-box card card-primary">
+        <div class="card-header">
+          <h3 class="card-title">Simulação de Entrevista</h3>
+        </div>
+        <div class="card-body" style="background-color: #F9F9F9;">
+
+          {% if job_id and applicant_id %}
+            <button class="btn btn-success mb-3" onclick="iniciarEntrevista()">Iniciar Entrevista</button>
+
+
+
+            <div id="entrevistaContainer" style="display: none;">
+                            <div class="form-group d-flex justify-content-end">
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="modoAcessibilidade" onchange="alternarModo()">
+                  <label class="custom-control-label" for="modoAcessibilidade">Modo Texto</label>
+                </div>
+              </div>
+              
+              <div id="gifFalando" style="text-align: center; margin-top: 20px;">
+                <img src="{{ url_for('static', filename='img/ai_speaking.gif') }}" alt="IA falando" style="max-width: 300px;">
+              </div>
+
+              <div id="perguntaTexto" style="display: none;">
+                <p id="pergunta" class="lead">Pergunta: ...</p>
+              </div>
+
+
+              <div class="mb-3">
+                <button id="btnGravacao" class="btn btn-primary" onclick="alternarGravacao()">🎙️ Gravar Resposta</button>
+                <button id="btnProxima" class="btn btn-success" onclick="nextQuestion()" disabled>➡️ Próxima pergunta</button>
+              </div>
+
+              <p id="statusEntrevista" class="text-muted mt-2"></p>
+
+              <div id="modoTexto" style="display: none;">
+                <label for="respostaDigitada">Sua resposta:</label>
+                <textarea id="respostaDigitada" class="form-control mb-2" rows="3" placeholder="Digite sua resposta aqui..."></textarea>
+                <button class="btn btn-primary" onclick="enviarRespostaTexto()">Enviar Resposta</button>
+              </div>
+
+              {% if modo_tryit %}
+              <div id="resultadoFinal" class="card card-success" style="display: none;">
+                <div class="card-header"><h4 class="card-title">Relatório de Processamento</h4></div>
+                <div class="card-body">
+                    <div>
+                      <h5>Triagem Currículo</h5>
+                      <p><strong>Score do Currículo:</strong> {{ tryit_score }}%</p>
+                      <p><strong>Palavras-chave do Currículo:</strong> {{ tryit_keywords }}</p>
+                    </div>
+                    <h5>Perguntas e Respostas</h5>
+                  <div id="qnaFinal"></div>
+                  <p id="resumoFinal"></p>
+                </div>
+              </div>
+              {% endif %}
+
+            </div>
+          {% else %}
+            <form method="POST">
+              <div class="form-group">
+                <label for="job_id">Selecione a Vaga:</label>
+                <select name="job_id" id="job_id" class="form-control" required>
+                  <option value="">Selecione uma vaga</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="applicant_id">Selecione o Candidato:</label>
+                <select name="applicant_id" id="applicant_id" class="form-control" required disabled>
+                  <option value="">Primeiro selecione uma vaga</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Iniciar Entrevista</button>
+            </form>
+          {% endif %}
+
+        </div>
+      </div>
+    </section>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+
+  <footer class="main-footer">
+    <div class="float-right d-none d-sm-block">
+      <b>Version:</b> MVP
+    </div>
+    <strong>FIAP Datathon</strong> Fase 5 - 2025.
+  </footer>
+
+  <!-- Control Sidebar -->
+  <aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+  </aside>
+  <!-- /.control-sidebar -->
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery -->
+<script src="{{ url_for('static', filename='plugins/jquery/jquery.min.js') }}"></script>
+<script>
+  const modoTryit = {{ 'true' if modo_tryit else 'false' }};
+</script>
+
+
+<!-- Bootstrap 4 -->
+<script src="{{ url_for('static', filename='plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<!-- overlayScrollbars -->
+<script src="{{ url_for('static', filename='plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js') }}"></script>
+<!-- AdminLTE App -->
+<script src="{{ url_for('static', filename='js/adminlte.min.js') }}"></script>
+<!-- Loader JS -->
+<script src="{{ url_for('static', filename='js/loader.js') }}"></script>
+
+<script src="{{ url_for('static', filename='js/client_side_audio_converter.js') }}"></script>
+
+<script>
+{% if job_id and applicant_id %}
+let history = [];
+let perguntaAtual = "";
+let perguntaIndex = 0;
+const maxPerguntas = 5;
+let mediaRecorder;
+let audioChunks = [];
+let gravando = false;
+let modoTextoAtivo = false;
+
+function alternarModo() {
+  modoTextoAtivo = document.getElementById("modoAcessibilidade").checked;
+
+  document.getElementById("btnGravacao").style.display = modoTextoAtivo ? "none" : "inline-block";
+  document.getElementById("modoTexto").style.display = modoTextoAtivo ? "block" : "none";
+  document.getElementById("perguntaTexto").style.display = modoTextoAtivo ? "block" : "none";
+
+  atualizarStatus(modoTextoAtivo ? "Modo texto ativado." : "Modo voz ativado.");
+}
+
+function enviarRespostaTexto() {
+  const texto = document.getElementById("respostaDigitada").value.trim();
+  if (!texto) {
+    atualizarStatus("Por favor, digite uma resposta antes de continuar.");
+    return;
+  }
+
+  const existente = history.find(h => h.question === perguntaAtual);
+  if (existente) {
+    existente.answer = texto;
+  } else {
+    history.push({ question: perguntaAtual, answer: texto });
+  }
+
+  atualizarStatus("✅ Resposta enviada. Pronto para continuar.");
+  document.getElementById("btnProxima").disabled = false;
+
+  document.getElementById("respostaDigitada").disabled = true;
+  document.querySelector("#modoTexto button").disabled = true;
+
+  if (perguntaIndex + 1 >= maxPerguntas) {
+    document.getElementById("btnProxima").innerText = "Finalizar Entrevista";
+  }
+}
+
+
+function iniciarEntrevista() {
+  document.querySelector("button[onclick='iniciarEntrevista()']").style.display = "none";
+  document.getElementById("entrevistaContainer").style.display = "block";
+  carregarProximaPergunta();
+}
+
+function alternarGravacao() {
+  if (!gravando) {
+    iniciarGravacao();
+  } else {
+    pararGravacao();
+  }
+}
+
+function carregarProximaPergunta() {
+  fetch("/api/next_question", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      job_id: "{{ job_id }}",
+      applicant_id: "{{ applicant_id }}",
+      history: history
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    perguntaAtual = data.question;
+    document.getElementById("pergunta").innerText = "Pergunta: " + perguntaAtual;
+
+    // Adicionar timestamp para evitar cache
+    return fetch('/speak', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        text: perguntaAtual,
+        timestamp: Date.now() // Adicionar timestamp
+      }),
+    });
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      // Criar um novo elemento de áudio a cada vez
+      const audioElement = new Audio();
+      
+      // Adicionar parâmetro anti-cache à URL
+      const audioUrl = data.audio_url + '?t=' + Date.now();
+      
+      // Definir a fonte e reproduzir
+      audioElement.src = audioUrl;
+      audioElement.play();
+      
+      // Registrar no console para debug
+      console.log("Reproduzindo áudio:", audioUrl);
+    }
+  })
+  .catch(error => {
+    console.error("Erro:", error);
+  });
+}
+
+
+// function iniciarGravacao() {
+//   // Verificar se o navegador suporta a API MediaRecorder
+//   if (!navigator.mediaDevices || !window.MediaRecorder) {
+//     atualizarStatus("❌ Seu navegador não suporta gravação de áudio. Por favor, use o modo texto ou tente outro navegador.");
+//     document.getElementById("modoAcessibilidade").checked = true;
+//     alternarModo();
+//     return;
+//   }
+
+//   // Solicitar acesso ao microfone com tratamento de erros
+//   navigator.mediaDevices.getUserMedia({ audio: true })
+//     .then(stream => {
+//       try {
+//         mediaRecorder = new MediaRecorder(stream);
+//         mediaRecorder.start();
+//         audioChunks = [];
+
+//         gravando = true;
+//         atualizarStatus("🔴 Gravando áudio...");
+//         atualizarBotaoGravacao("🛑 Parar Gravação", "btn-danger");
+
+//         mediaRecorder.ondataavailable = event => {
+//           audioChunks.push(event.data);
+//         };
+
+//         // Adicionar tratamento de erros durante a gravação
+//         mediaRecorder.onerror = (event) => {
+//           console.error("Erro durante a gravação:", event);
+//           atualizarStatus("❌ Erro durante a gravação. Tente novamente ou use o modo texto.");
+//           gravando = false;
+//           atualizarBotaoGravacao("🎙️ Tentar Novamente", "btn-warning");
+//         };
+//       } catch (err) {
+//         console.error("Erro ao iniciar gravação:", err);
+//         atualizarStatus("❌ Não foi possível iniciar a gravação. Tente novamente ou use o modo texto.");
+//         stream.getTracks().forEach(track => track.stop());
+//       }
+//     })
+//     .catch(err => {
+//       console.error("Erro ao acessar microfone:", err);
+      
+//       let mensagemErro = "❌ Não foi possível acessar o microfone. ";
+      
+//       if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+//         mensagemErro += "Permissão negada. Por favor, permita o acesso ao microfone nas configurações do navegador.";
+//       } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+//         mensagemErro += "Nenhum microfone encontrado. Verifique se há um dispositivo conectado.";
+//       } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+//         mensagemErro += "O microfone está em uso por outro aplicativo.";
+//       } else if (err.name === "OverconstrainedError" || err.name === "ConstraintNotSatisfiedError") {
+//         mensagemErro += "Não foi possível encontrar um microfone que atenda aos requisitos.";
+//       } else if (err.name === "TypeError") {
+//         mensagemErro += "Configuração de áudio inválida.";
+//       } else {
+//         mensagemErro += "Verifique as permissões do navegador ou use o modo texto.";
+//       }
+      
+//       atualizarStatus(mensagemErro);
+      
+//       document.getElementById("modoAcessibilidade").checked = true;
+//       alternarModo();
+//     });
+// }
+
+// function pararGravacao() {
+//   if (!mediaRecorder || mediaRecorder.state === "inactive") {
+//     atualizarStatus("⚠️ Nenhuma gravação em andamento.");
+//     gravando = false;
+//     atualizarBotaoGravacao("🎙️ Gravar Resposta", "btn-primary");
+//     return;
+//   }
+
+//   gravando = false;
+//   atualizarStatus("🔄 Processando áudio...");
+  
+//   try {
+//     mediaRecorder.stop();
+
+//     atualizarBotaoGravacao("🎙️ Gravar Novamente", "btn-warning");
+//     document.getElementById("btnProxima").disabled = true;
+
+//     mediaRecorder.onstop = () => {
+//       try {
+//         if (audioChunks.length === 0) {
+//           atualizarStatus("⚠️ Nenhum áudio gravado. Tente novamente ou use o modo texto.");
+//           return;
+//         }
+
+//         const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+//         const formData = new FormData();
+//         formData.append("audio", audioBlob);
+
+//         atualizarStatus("📤 Transcrevendo resposta...");
+
+//         fetch("/transcribe", {
+//           method: "POST",
+//           body: formData
+//         })
+//         .then(res => {
+//           if (!res.ok) {
+//             throw new Error(`Erro HTTP: ${res.status}`);
+//           }
+//           return res.json();
+//         })
+//         .then(data => {
+//           if (!data.text || data.text.trim() === "") {
+//             atualizarStatus("⚠️ Não foi possível transcrever o áudio. Tente falar mais alto ou use o modo texto.");
+//             return;
+//           }
+
+//           history.push({ question: perguntaAtual, answer: data.text });
+//           atualizarStatus("✅ Resposta transcrita: \"" + data.text.substring(0, 50) + (data.text.length > 50 ? "..." : "") + "\"");
+//           document.getElementById("btnProxima").disabled = false;
+
+//           if (perguntaIndex + 1 >= maxPerguntas) {
+//             document.getElementById("btnProxima").innerText = "Finalizar Entrevista";
+//           }
+//         })
+//         .catch(err => {
+//           console.error("Erro ao transcrever áudio:", err);
+//           atualizarStatus("❌ Erro ao processar o áudio. Tente novamente ou use o modo texto.");
+//           atualizarBotaoGravacao("🎙️ Tentar Novamente", "btn-primary");
+//         });
+//       } catch (err) {
+//         console.error("Erro ao processar áudio gravado:", err);
+//         atualizarStatus("❌ Erro ao processar o áudio. Tente novamente ou use o modo texto.");
+//         atualizarBotaoGravacao("🎙️ Tentar Novamente", "btn-primary");
+//       }
+//     };
+//   } catch (err) {
+//     console.error("Erro ao parar gravação:", err);
+//     atualizarStatus("❌ Erro ao finalizar a gravação. Tente novamente ou use o modo texto.");
+//     gravando = false;
+//     atualizarBotaoGravacao("🎙️ Tentar Novamente", "btn-primary");
+//   }
+// }
+
+function atualizarBotaoGravacao(texto, classe) {
+  const botao = document.getElementById("btnGravacao");
+  botao.textContent = texto;
+  botao.className = `btn ${classe}`;
+}
+
+function atualizarStatus(mensagem) {
+  document.getElementById("statusEntrevista").innerText = mensagem;
+}
+
+function nextQuestion() {
+  perguntaIndex++;
+
+  if (modoTextoAtivo) {
+    document.getElementById("respostaDigitada").disabled = false;
+    document.querySelector("#modoTexto button").disabled = false;
+    document.getElementById("respostaDigitada").value = "";
+  }
+  
+  if (perguntaIndex >= maxPerguntas) {
+    finalizarEntrevista();
+    return;
+  }
+document.getElementById("btnProxima").innerText = "➡️ Próxima pergunta";
+document.getElementById("btnProxima").disabled = true;
+atualizarBotaoGravacao("🎙️ Gravar Resposta", "btn-primary");
+atualizarStatus("");
+  carregarProximaPergunta();
+}
+
+function finalizarEntrevista() {
+  const perguntas = history.map(h => h.question);
+  const respostas = history.map(h => h.answer);
+
+  fetch("/resumo", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      questions: perguntas,
+      responses: respostas,
+      job_id: "{{ job_id }}",
+      applicant_id: "{{ applicant_id }}"
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (modoTryit) {
+      const qnaDiv = document.getElementById("qnaFinal");
+      if (qnaDiv) {
+        qnaDiv.innerHTML = "";
+        for (let i = 0; i < perguntas.length; i++) {
+          qnaDiv.innerHTML += `<p><strong>${i + 1}. ${perguntas[i]}</strong><br>${respostas[i] || "[sem resposta]"}</p>`;
+        }
+        document.getElementById("resumoFinal").innerText = data.summary;
+        document.getElementById("resultadoFinal").style.display = "block";
+        document.getElementById("btnProxima").disabled = true;
+        document.getElementById("btnGravacao").disabled = true;
+        const btnTexto = document.querySelector("#modoTexto button");
+        if (btnTexto) btnTexto.disabled = true;
+        const textarea = document.getElementById("respostaDigitada");
+        if (textarea) textarea.disabled = true;
+      }
+    } else {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "alert alert-success mt-4";
+      msgDiv.innerHTML = `
+        <h4>Entrevista concluída!</h4>
+        <p>Obrigado por participar da simulação. Em breve, um recrutador entrará em contato com uma devolutiva.</p>
+        <div class="mt-3">
+          <a href="{{ url_for('interview') }}" class="btn btn-primary mr-2">Voltar à Simulação</a>
+          <a href="{{ url_for('homepage') }}" class="btn btn-secondary">Ir para o Dashboard</a>
+        </div>
+      `;
+      document.getElementById("entrevistaContainer").appendChild(msgDiv);
+
+      document.getElementById("btnProxima").disabled = true;
+      document.getElementById("btnGravacao").disabled = true;
+      const btnTexto = document.querySelector("#modoTexto button");
+      if (btnTexto) btnTexto.disabled = true;
+      const textarea = document.getElementById("respostaDigitada");
+      if (textarea) textarea.disabled = true;
+    }
+  });
+}
+{% else %}
+$(document).ready(function() {
+  console.log("Documento pronto, inicializando selects dinâmicos...");
+  
+  carregarVagas();
+  
+  $('#job_id').on('change', function() {
+    var jobId = $(this).val();
+    
+    if (!jobId) {
+      $('#applicant_id').html('<option value="">-- Primeiro selecione uma vaga --</option>');
+      $('#applicant_id').prop('disabled', true);
+      return;
+    }
+    
+    carregarCandidatosPorVaga(jobId);
+  });
+});
+
+function carregarVagas() {
+  var $jobSelect = $('#job_id');
+  
+  $jobSelect.html('<option value="">Carregando vagas...</option>');
+  $jobSelect.prop('disabled', true);
+  
+  $.ajax({
+    url: '/api/vagas_abertas',
+    type: 'GET',
+    dataType: 'json',
+    success: function(vagas) {
+      $jobSelect.html('<option value="">Selecione uma vaga</option>');
+      
+      $.each(vagas, function(i, vaga) {
+        $jobSelect.append(
+          $('<option></option>')
+            .val(vaga.id)
+            .text(vaga.id + ' - ' + vaga.titulo)
+        );
+      });
+      
+      $jobSelect.prop('disabled', false);
+    },
+    error: function(xhr, status, error) {
+      console.error('Erro ao carregar vagas:', error);
+      console.error('Status:', status);
+      console.error('Resposta:', xhr.responseText);
+      $jobSelect.html('<option value="">Erro ao carregar vagas</option>');
+      alert('Não foi possível carregar a lista de vagas. Por favor, recarregue a página.');
+    }
+  });
+}
+
+function carregarCandidatosPorVaga(jobId) {
+  var $applicantSelect = $('#applicant_id');
+  
+  $applicantSelect.html('<option value="">Carregando candidatos...</option>');
+  $applicantSelect.prop('disabled', true);
+  
+  $.ajax({
+    url: '/api/candidatos_por_vaga/' + jobId,
+    type: 'GET',
+    dataType: 'json',
+    success: function(candidatos) {
+      $applicantSelect.empty();
+      
+      if (candidatos.length === 0) {
+        $applicantSelect.html('<option value="">Nenhum candidato disponível para esta vaga</option>');
+        $applicantSelect.prop('disabled', true);
+        return;
+      }
+      
+      $applicantSelect.append('<option value="">Selecione um candidato</option>');
+      
+      $.each(candidatos, function(i, candidato) {
+        var titulo = candidato.titulo || 'Sem título';
+        $applicantSelect.append(
+          $('<option></option>')
+            .val(candidato.id)
+            .text(candidato.id + ' - ' + candidato.nome + ' (' + titulo + ')')
+        );
+      });
+      
+      $applicantSelect.prop('disabled', false);
+    },
+    error: function(xhr, status, error) {
+      console.error('Erro ao carregar candidatos:', error);
+      console.error('Status:', status);
+      console.error('Resposta:', xhr.responseText);
+      $applicantSelect.html('<option value="">Erro ao carregar candidatos</option>');
+      $applicantSelect.prop('disabled', true);
+    }
+  });
+}
+{% endif %}
+</script>
+</body>
+</html>

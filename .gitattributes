@@ -1,0 +1,7 @@
+*.json filter=lfs diff=lfs merge=lfs -text
+*.js filter=lfs diff=lfs merge=lfs -text
+*.css filter=lfs diff=lfs merge=lfs -text
+*.css.map filter=lfs diff=lfs merge=lfs -text
+*.js.map filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.db filter=lfs diff=lfs merge=lfs -text

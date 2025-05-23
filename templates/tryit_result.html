@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Resultado da Entrevista</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/adminlte.min.css') }}">
+    <!-- Loader style -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/loader.css') }}">
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+  <!-- Loader -->
+<div class="loader-container">
+    <div class="loader"></div>
+</div>
+  <div class="wrapper">
+    <div class="content-wrapper">
+      <section class="content-header">
+        <div class="container-fluid">
+          <h1>🎯 Resultado da Simulação</h1>
+        </div>
+      </section>
+
+      <section class="content">
+        <div class="container-fluid">
+          {% if match %}
+            <div class="card card-success">
+              <div class="card-header">
+                <h3 class="card-title">Parabéns, {{ match.nome }}</h3>
+              </div>
+              <div class="card-body">
+                <p><strong>Vaga:</strong> {{ job.titulo }} - {{ job.cliente }}</p>
+                <p><strong>Score do Currículo:</strong> {{ match.score }}%</p>
+                <p><strong>Palavras-chave do Currículo:</strong> {{ match.keywords }}</p>
+
+                {% if match.resumo %}
+                  <hr>
+                  <h4>Resumo da Entrevista</h4>
+                  <p>{{ match.resumo }}</p>
+                  <p><strong>Nota da Entrevista:</strong> {{ match.nota }}</p>
+                {% else %}
+                  <p class="text-warning">⚠️ A entrevista ainda não foi finalizada.</p>
+                {% endif %}
+              </div>
+            </div>
+          {% else %}
+            <div class="alert alert-danger">Usuário não encontrado.</div>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+  </div>
+    <!-- Loader JS -->
+  <script src="{{ url_for('static', filename='plugins/jquery/jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/loader.js') }}"></script>
+</body>
+</html>
